@@ -135,6 +135,8 @@ class Arimanager extends FreePBX_Helpers implements BMO {
 		}
 		$this->Conf->commit_conf_settings();
 		out(_("Done!"));
+		// check + sign in username or password 
+		$this->AddPlusSignNotification();
 
 		if (!$addNotify) {
 			outn(_("Add Notification..."));
@@ -185,7 +187,7 @@ class Arimanager extends FreePBX_Helpers implements BMO {
 		}
 		$config[self::CONF_FILE_NAME] = $config_users;
 		// File >>> ari_additional.conf - END
-
+		$this->AddPlusSignNotification();
 		return $config;
 	}
 
@@ -489,6 +491,25 @@ class Arimanager extends FreePBX_Helpers implements BMO {
 				}
 				$this->setConfig('notificationStatus', '1');
 			}
+		}
+	}
+	public function AddPlusSignNotification(){
+		$en = $this->ariEnabled ? 'yes' : 'no';
+		$found = false;
+		if($en == 'yes' && (preg_match('/\+/', $this->ariPassword) || preg_match('/\+/', $this->ariUser) ) ){
+			$found = true;
+			$this->FreePBX->Notifications->add_warning('AriManager','ARIPLUSSIGN', _("Non Supported character in ARI manager/ password"),sprintf(_("We have found '+' sign in your ARI manager user/password which is not supported so please remove the '+' sign from your ARI Manager (%s) / password"),$this->ariUser),"",true,true);
+		}
+		// check for addional users
+		$users 	 = $this->getAllUsers();
+		foreach($users as $user) {
+			if(preg_match('/\+/', $user['name']) || preg_match('/\+/', $user['password']) ){
+				$found = true;
+				$this->FreePBX->Notifications->add_warning('AriManager','ARIPLUSSIGN',_("Non Supported character in ARI manager / password"),sprintf(_("We have found '+' sign in your ARI manager user/ password which is not supported so please remove the '+' sign from your ARI Manager(%s) / password"),$user['name']),"",true,true);
+			}
+		}
+		if($found == false) {
+			$this->FreePBX->Notifications->delete('AriManager','ARIPLUSSIGN');
 		}
 	}
 
